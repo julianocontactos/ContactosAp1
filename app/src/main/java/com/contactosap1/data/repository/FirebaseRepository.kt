@@ -33,6 +33,18 @@ class FirebaseRepository {
         }
     }
 
+    fun logout() {
+        auth.signOut()
+    }
+    
+    suspend fun forgotPassword(email: String) {
+        try {
+            auth.sendPasswordResetEmail(email).await()
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
     suspend fun cadastrarUsuario(email: String, password: String, nome: String, idEmpresa: String): String {
         return try {
             // Criar o usuário na autenticação
@@ -55,6 +67,16 @@ class FirebaseRepository {
             throw e
         }
     }
+    
+    suspend fun getCurrentUser(): Usuario? {
+        val uid = auth.currentUser?.uid ?: return null
+        return try {
+            val document = usuariosCollection.document(uid).get().await()
+            document.toObject(Usuario::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     // Métodos de Empresa
     suspend fun criarEmpresa(empresa: Empresa): String {
@@ -62,6 +84,15 @@ class FirebaseRepository {
         val novaEmpresa = empresa.copy(id = id)
         empresasCollection.document(id).set(novaEmpresa).await()
         return id
+    }
+    
+    suspend fun getEmpresas(): List<Empresa> {
+        return try {
+            val snapshot = empresasCollection.get().await()
+            snapshot.toObjects(Empresa::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     // Métodos de Painel
